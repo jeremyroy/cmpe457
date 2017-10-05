@@ -55,7 +55,7 @@ def buildImage():
 
   # Read image and convert to YCbCr
 
-  print imgPath
+  # print imgPath
   src = Image.open( imgPath ).convert( 'YCbCr' )
   srcPixels = src.load()
 
@@ -156,8 +156,12 @@ def keyboard( key, x, y ):
 
 def loadImage( path ):
 
-  global imgPath
+  global imgPath, contrast, brightness
   imgPath = path
+
+  # Reset global parameters
+  contrast = 1 # contrast by which luminance is scaled
+  brightness = 0 # brightness by which luminance is scaled
 
 def saveImage( path ):
 

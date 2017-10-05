@@ -27,8 +27,8 @@ except:
 windowWidth  = 600 # window dimensions
 windowHeight =  800
 
-factor = 1 # factor by which luminance is scaled
-
+contrast = 1 # contrast by which luminance is scaled
+brightness = 0 # brightness by which luminance is scaled
 
 
 # Image directory and pathe to image file
@@ -78,7 +78,7 @@ def buildImage():
 
       # ---- MODIFY PIXEL ----
 
-      y = int(factor * y)
+      y = int(contrast * y) + (brightness * 255) # TODO Normalize brightness before doing this
 
       # write destination pixel (while flipping the image in the vertical direction)
       
@@ -183,22 +183,23 @@ def reshape( newWidth, newHeight ):
 button = None
 initX = 0
 initY = 0
-initFactor = 0
-
+initContrast = 1
+initBrightness = 0
 
 
 # Handle mouse click/unclick
 
 def mouse( btn, state, x, y ):
 
-  global button, initX, initY, initFactor
+  global button, initX, initY, initContrast, initBrightness
 
   if state == GLUT_DOWN:
 
     button = btn
     initX = x
     initY = y
-    initFactor = factor
+    initContrast = contrast
+    initBrightness = brightness
 
   elif state == GLUT_UP:
 
@@ -213,12 +214,14 @@ def motion( x, y ):
   diffX = x - initX
   diffY = y - initY
 
-  global factor
+  global contrast
+  global brightness
 
-  factor = initFactor + diffX / float(windowWidth)
+  contrast = initContrast + diffY / float(windowWidth)
+  brightness = initBrightness + diffX / float(windowHeight)
 
-  if factor < 0:
-    factor = 0
+  if contrast < 0:
+    contrast = 0
 
   glutPostRedisplay()
   

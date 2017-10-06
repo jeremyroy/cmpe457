@@ -30,6 +30,7 @@ windowHeight =  800
 contrast = 1 # contrast by which luminance is scaled
 brightness = 0 # brightness by which luminance is scaled
 
+current_image = None
 
 # Image directory and pathe to image file
 
@@ -52,20 +53,18 @@ root.withdraw()
 # Read and modify an image.
 
 def buildImage():
+  global current_image
 
   # Read image and convert to YCbCr
+  current_image_pixels = current_image.convert( 'YCbCr' ).load()
 
-  # print imgPath
-  src = Image.open( imgPath ).convert( 'YCbCr' )
-  srcPixels = src.load()
-
-  width  = src.size[0]
-  height = src.size[1]
+  width  = current_image.size[0]
+  height = current_image.size[1]
 
   # Set up a new, blank image of the same size
 
-  dst = Image.new( 'YCbCr', (width,height) )
-  dstPixels = dst.load()
+  new_image = Image.new( 'YCbCr', (width,height) )
+  new_image_pixels = new_image.load()
 
   # Build destination image from source image
 
@@ -74,7 +73,7 @@ def buildImage():
 
       # read source pixel
       
-      y,cb,cr = srcPixels[i,j]
+      y,cb,cr = current_image_pixels[i,j]
 
       # ---- MODIFY PIXEL ----
 
@@ -82,11 +81,11 @@ def buildImage():
 
       # write destination pixel (while flipping the image in the vertical direction)
       
-      dstPixels[i,height-j-1] = (y,cb,cr)
+      new_image_pixels[i,height-j-1] = (y,cb,cr)
 
   # Done
 
-  return dst.convert( 'RGB' )
+  return new_image.convert( 'RGB' )
 
 
 
@@ -156,8 +155,10 @@ def keyboard( key, x, y ):
 
 def loadImage( path ):
 
-  global imgPath, contrast, brightness
+  global imgPath, contrast, brightness, current_image 
   imgPath = path
+  
+  current_image = Image.open( imgPath ).convert( 'YCbCr' )
 
   # Reset global parameters
   contrast = 1 # contrast by which luminance is scaled
@@ -165,7 +166,7 @@ def loadImage( path ):
 
 def saveImage( path ):
 
-  buildImage().save( path )
+  current_image.save( path )
 
   
 
@@ -196,6 +197,7 @@ initBrightness = 0
 def mouse( btn, state, x, y ):
 
   global button, initX, initY, initContrast, initBrightness
+  global contrast, brightness, current_image
 
   if state == GLUT_DOWN:
 
@@ -208,7 +210,11 @@ def mouse( btn, state, x, y ):
   elif state == GLUT_UP:
 
     button = None
-
+    
+    # Set current image to new image
+    current_image = buildImage().transpose(Image.FLIP_TOP_BOTTOM)
+    contrast = 1
+    brightness = 0
 
 
 # Handle mouse motion
@@ -230,6 +236,10 @@ def motion( x, y ):
   glutPostRedisplay()
   
 
+
+# Load current image
+current_image = Image.open( imgPath ).convert( 'YCbCr' )
+print current_image
     
 # Run OpenGL
 

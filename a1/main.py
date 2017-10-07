@@ -31,15 +31,17 @@ contrast = 1 # contrast by which luminance is scaled
 brightness = 0 # brightness by which luminance is scaled
 
 current_image = None
+current_filter = None
 
-# Image directory and pathe to image file
+# Image directory and path to image file
 
 imgDir      = 'images'
 imgFilename = 'mandrill.png'
 
 imgPath = os.path.join( imgDir, imgFilename )
 
-
+# Filer directory and path to filter file
+filterDir      = 'filters'
 
 # File dialog
 
@@ -192,18 +194,28 @@ def keyboard( key, x, y ):
     if path:
       loadImage( path )
 
+  elif key == 'f':
+    path = tkFileDialog.askopenfilename( initialdir = filterDir )
+    if path:
+      loadFilter( path )
+
   elif key == 's':
     outputPath = tkFileDialog.asksaveasfilename( initialdir = '.' )
     if outputPath:
       saveImage( outputPath )
+
+  elif key == 'a':
+    if current_filter:
+      # TODO: convolve filter and image
+      print len(current_filter[0])
+      print len(current_filter)
+      print current_filter
 
   elif key == 'h':
     # Remove all previous corrections
     brightness = 0
     contrast = 1
 
-    print current_image
-    
     # Perform equalization
     current_image = hist_equalize().transpose(Image.FLIP_TOP_BOTTOM)
 
@@ -236,7 +248,23 @@ def saveImage( path ):
 
   current_image.save( path )
 
+def loadFilter( path ):
+  global current_filter
+
+  # Load filter info memory
+  filter_file = open(path,"r")
+  xdim, ydim = map(int, filter_file.readline().split())
+  scale = float(filter_file.readline())
   
+  current_filter = [0] * ydim
+
+  for i in range(ydim):
+    current_filter[i] = map(int, filter_file.readline().split())
+  
+  filter_file.close()
+
+  # Scale filter
+  current_filter = [[float(j)*scale for j in i] for i in current_filter]
 
 # Handle window reshape
 

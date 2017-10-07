@@ -49,6 +49,62 @@ root = Tkinter.Tk()
 root.withdraw()
 
 
+def hist_equalize():
+  global current_image
+
+  # Read image and convert to YCbCr
+  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+
+  width  = current_image.size[0]
+  height = current_image.size[1]
+
+  # Set up a new, blank image of the same size
+
+  temp_image = Image.new( 'YCbCr', (width,height) )
+  temp_image_pixels = temp_image.load()
+
+  # Build histogram from source image
+  histogram = [0] * 256
+
+  for i in range(width):
+    for j in range(height):
+
+      # read source pixel
+      
+      y,cb,cr = current_image_pixels[i,j]
+      
+      if (y > 255):
+        y = 255
+      elif (y < 0):
+        y = 0
+
+      # ---- CREATE HISTOGRAM ----
+
+      histogram[y] += 1
+
+  # Apply histogram to temp image
+
+  for i in range(width):
+    for j in range(height):
+
+      # read source pixel
+      
+      y,cb,cr = current_image_pixels[i,j]
+
+      # apply histogram correction
+
+      y = ( 256.0 / (width * height) ) * sum( histogram[0:int(y)] ) - 1
+      y = int( round(y) )
+
+      # write destination pixel (while flipping the image in the vertical direction)
+      
+      temp_image_pixels[i,height-j-1] = (y,cb,cr)
+
+  # Done
+
+  return temp_image.convert( 'RGB' )
+
+
 
 # Read and modify an image.
 
@@ -126,6 +182,8 @@ def display():
 
 def keyboard( key, x, y ):
 
+  global brightness, contrast, current_image
+
   if key == '\033': # ESC = exit
     sys.exit(0)
 
@@ -138,6 +196,16 @@ def keyboard( key, x, y ):
     outputPath = tkFileDialog.asksaveasfilename( initialdir = '.' )
     if outputPath:
       saveImage( outputPath )
+
+  elif key == 'h':
+    # Remove all previous corrections
+    brightness = 0
+    contrast = 1
+
+    print current_image
+    
+    # Perform equalization
+    current_image = hist_equalize().transpose(Image.FLIP_TOP_BOTTOM)
 
   else:
     print 'key =', key    # DO NOT REMOVE THIS LINE.  It will be used during automated marking.

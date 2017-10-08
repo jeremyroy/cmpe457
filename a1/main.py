@@ -108,6 +108,80 @@ def hist_equalize():
 
 
 
+
+# Apply filter by convolution
+
+def applyFilter():
+
+  global current_filter
+
+  print "Starting convolution"
+
+  # If no filter loaded, load a filter
+
+  if current_filter == None:
+    path = tkFileDialog.askopenfilename( initialdir = filterDir )
+    loadFilter(path)
+
+  # Find origin of filter - assume origin = center
+
+  f_width  = len(current_filter[0])
+  f_height = len(current_filter)
+  orig_x   = f_width / 2 
+  orig_y   = f_height / 2
+
+  # Flip filter for convolution
+ 
+  current_filter = list(reversed(current_filter))
+
+  for i in range(len(current_filter)):
+    current_filter[i] = list(reversed(current_filter[i]))
+
+  # Read image and convert to YCbCr
+  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+
+  width  = current_image.size[0]
+  height = current_image.size[1]
+
+  # Set up a new, blank image of the same size
+
+  new_image = Image.new( 'YCbCr', (width,height) )
+  new_image_pixels = new_image.load()
+
+  # Perform convolution
+
+  for i in range(width):
+    for j in range (height):
+
+      new_y = 0
+
+      for f_i in range(-orig_x, orig_x + 1):
+        for f_j in range(-orig_y, orig_y + 1):
+          if ( 0 <= (i + f_i) < width ) and ( 0 <= (j + f_j) < height ):
+            # read source pixel
+      
+            y,cb,cr = current_image_pixels[i+f_i ,j+f_j]
+
+            # Calculate partial sum
+
+            new_y += current_filter[f_j][f_i] * y
+
+
+      # write destination pixel (while flipping the image in the vertical direction)
+
+      y,cb,cr = current_image_pixels[i,j]
+
+      new_image_pixels[i,height-j-1] = (new_y,cb,cr)
+
+  # Done
+
+  print "Finished convolution"
+
+  return new_image.convert( 'RGB' )
+
+
+
+
 # Read and modify an image.
 
 def buildImage():
@@ -205,11 +279,11 @@ def keyboard( key, x, y ):
       saveImage( outputPath )
 
   elif key == 'a':
-    if current_filter:
-      # TODO: convolve filter and image
-      print len(current_filter[0])
-      print len(current_filter)
-      print current_filter
+    # TODO: convolve filter and image
+    current_image = applyFilter().transpose(Image.FLIP_TOP_BOTTOM)
+    #print len(current_filter[0])
+    #print len(current_filter)
+    #print current_filter
 
   elif key == 'h':
     # Remove all previous corrections

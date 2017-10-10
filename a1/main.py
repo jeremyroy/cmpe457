@@ -33,6 +33,8 @@ brightness = 0 # brightness by which luminance is scaled
 current_image = None
 current_filter = None
 
+c_rad = 20
+
 # Image directory and path to image file
 
 imgDir      = 'images'
@@ -138,6 +140,7 @@ def applyFilter():
     current_filter[i] = list(reversed(current_filter[i]))
 
   # Read image and convert to YCbCr
+
   current_image_pixels = current_image.convert( 'YCbCr' ).load()
 
   width  = current_image.size[0]
@@ -164,8 +167,7 @@ def applyFilter():
 
             # Calculate partial sum
 
-            new_y += current_filter[f_j][f_i] * y
-
+            new_y += current_filter[orig_x + f_j][orig_y + f_i] * y
 
       # write destination pixel (while flipping the image in the vertical direction)
 
@@ -181,6 +183,100 @@ def applyFilter():
 
 
 
+def applyFilterAroundPoint(x, y):
+  
+  global current_filter, c_rad
+
+  # If no filter loaded, load a filter
+
+  if current_filter == None:
+    path = tkFileDialog.askopenfilename( initialdir = filterDir )
+    loadFilter(path)
+
+  # Find origin of filter - assume origin = center
+
+  f_width  = len(current_filter[0])
+  f_height = len(current_filter)
+  orig_x   = f_width / 2 
+  orig_y   = f_height / 2
+
+  # Flip filter for convolution
+ 
+  current_filter = list(reversed(current_filter))
+
+  for i in range(len(current_filter)):
+    current_filter[i] = list(reversed(current_filter[i]))
+
+  # Read image and convert to YCbCr
+
+  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+
+  width  = current_image.size[0]
+  height = current_image.size[1]
+
+  # Set up a temporary copy of the current image
+
+  new_image = current_image.copy().transpose(Image.FLIP_TOP_BOTTOM)
+  new_image_pixels = new_image.convert( 'YCbCr' ).load()
+
+  # Perform convolution around point (x,y)
+
+  for i in range(x - c_rad, x + c_rad):
+    for j in range(y - c_rad, y + c_rad):
+
+      # Check if current pixel is out of range
+
+      if (0 <= i < width) and (0 <= j < height):
+
+        # Check if pixel is within radius of point x,y
+
+        dist_from_point = numpy.sqrt( pow(x-i,2) + pow(y-j,2) )
+
+        if dist_from_point <= c_rad:
+
+          # Perform convolution on this point
+
+          new_y = 0
+
+          #for f_i in range(-orig_x, orig_x + 1):
+          #  for f_j in range(-orig_y, orig_y + 1):
+          #    if ( 0 <= (i + f_i) < width ) and ( 0 <= (j + f_j) < height ):
+          #      # read source pixel
+
+          #      y,cb,cr = current_image_pixels[i+f_i ,j+f_j]
+
+          #      # Calculate partial sum
+
+          #      new_y += current_filter[orig_x + f_j][orig_y + f_i] * y
+
+          # write destination pixel (while flipping the image in the vertical direction)
+          #print str(i) + "," + str(j)
+          y,cb,cr = current_image_pixels[i,j]
+      
+          new_image_pixels[i,height-j-1] = (0,cb,cr)
+
+  # Done
+
+  return new_image.convert( 'RGB' )
+
+def draw_black_line(x,y):
+  
+  width  = current_image.size[0]
+  height = current_image.size[1]
+
+  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+
+  #new_image = Image.new( 'YCbCr', (width,height) )
+  #new_image_pixels = new_image.load()
+
+  new_image = current_image.copy().transpose(Image.FLIP_TOP_BOTTOM).convert( 'YCbCr' ).convert( 'RGB' )
+  #new_image_pixels = new_image.load()
+
+  #intensity,cb,cr = current_image_pixels[x,y]
+      
+  #new_image_pixels[x,y] = (0,cb,cr)
+
+  return new_image#.convert( 'RGB' )
 
 # Read and modify an image.
 
@@ -258,7 +354,7 @@ def display():
 
 def keyboard( key, x, y ):
 
-  global brightness, contrast, current_image
+  global brightness, contrast, current_image, c_rad
 
   if key == '\033': # ESC = exit
     sys.exit(0)
@@ -279,11 +375,7 @@ def keyboard( key, x, y ):
       saveImage( outputPath )
 
   elif key == 'a':
-    # TODO: convolve filter and image
     current_image = applyFilter().transpose(Image.FLIP_TOP_BOTTOM)
-    #print len(current_filter[0])
-    #print len(current_filter)
-    #print current_filter
 
   elif key == 'h':
     # Remove all previous corrections
@@ -292,6 +384,14 @@ def keyboard( key, x, y ):
 
     # Perform equalization
     current_image = hist_equalize().transpose(Image.FLIP_TOP_BOTTOM)
+
+  elif key == '-' or key == '_':
+    c_rad -= 1
+    print "r = " + str(c_rad)
+
+  elif key == '+' or key == '=':
+    c_rad += 1
+    print "r = " + str(c_rad)
 
   else:
     print 'key =', key    # DO NOT REMOVE THIS LINE.  It will be used during automated marking.
@@ -391,20 +491,43 @@ def mouse( btn, state, x, y ):
 
 def motion( x, y ):
 
-  diffX = x - initX
-  diffY = y - initY
+  global current_image
 
-  global contrast
-  global brightness
+  if button == GLUT_LEFT_BUTTON:
 
-  contrast = initContrast + diffY / float(windowWidth)
-  brightness = initBrightness + diffX / float(windowHeight)
+    diffX = x - initX
+    diffY = y - initY
 
-  if contrast < 0:
-    contrast = 0
+    global contrast
+    global brightness
+
+    contrast = initContrast + diffY / float(windowWidth)
+    brightness = initBrightness + diffX / float(windowHeight)
+
+    if contrast < 0:
+      contrast = 0
+
+  elif button == GLUT_RIGHT_BUTTON:
+    print str(x) + "," + str(y)
+
+    width  = current_image.size[0]
+    height = current_image.size[1]
+
+    baseX = (windowWidth-width)/2
+    baseY = (windowHeight-height)/2
+
+    x = x - baseX
+    y = (windowHeight - y) - baseY
+
+    print str(x) + "," + str(y)
+
+    # current_image = applyFilter().transpose(Image.FLIP_TOP_BOTTOM)
+    # current_image = applyFilterAroundPoint(x,y).transpose(Image.FLIP_TOP_BOTTOM)
+    current_image = draw_black_line(x,y).transpose(Image.FLIP_TOP_BOTTOM)
+    print "Displaying"
 
   glutPostRedisplay()
-  
+
 
 
 # Load current image

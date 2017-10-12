@@ -4,7 +4,7 @@
 #
 #   numpy, PyOpenGL, Pillow
 
-import sys, os, numpy
+import sys, os, numpy, Queue
 
 try: # Pillow
   from PIL import Image
@@ -33,6 +33,8 @@ brightness = 0 # brightness by which luminance is scaled
 current_image = None
 current_filter = None
 
+current_image_pixels = None
+
 c_rad = 20
 
 # Image directory and path to image file
@@ -54,10 +56,7 @@ root.withdraw()
 
 
 def hist_equalize():
-  global current_image
-
-  # Read image and convert to YCbCr
-  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+  global current_image, current_image_pixels
 
   width  = current_image.size[0]
   height = current_image.size[1]
@@ -106,7 +105,8 @@ def hist_equalize():
 
   # Done
 
-  return temp_image.convert( 'RGB' )
+  current_image = temp_image.transpose(Image.FLIP_TOP_BOTTOM)
+  current_image_pixels = current_image.load()
 
 
 
@@ -115,7 +115,7 @@ def hist_equalize():
 
 def applyFilter():
 
-  global current_filter
+  global current_filter, current_image, current_image_pixels
 
   print "Starting convolution"
 
@@ -139,9 +139,7 @@ def applyFilter():
   for i in range(len(current_filter)):
     current_filter[i] = list(reversed(current_filter[i]))
 
-  # Read image and convert to YCbCr
-
-  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+  # Calculate convenient variables
 
   width  = current_image.size[0]
   height = current_image.size[1]
@@ -179,13 +177,14 @@ def applyFilter():
 
   print "Finished convolution"
 
-  return new_image.convert( 'RGB' )
+  current_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
+  current_image_pixels = current_image.load()
 
 
 
 def applyFilterAroundPoint(x, y):
   
-  global current_filter, c_rad
+  global current_filter, c_rad, current_image, current_image_pixels
 
   # If no filter loaded, load a filter
 
@@ -207,9 +206,7 @@ def applyFilterAroundPoint(x, y):
   for i in range(len(current_filter)):
     current_filter[i] = list(reversed(current_filter[i]))
 
-  # Read image and convert to YCbCr
-
-  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+  # Calculate convenient variables
 
   width  = current_image.size[0]
   height = current_image.size[1]
@@ -257,34 +254,41 @@ def applyFilterAroundPoint(x, y):
 
   # Done
 
-  return new_image.convert( 'RGB' )
+  current_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
+  current_image_pixels = current_image.load()
 
 def draw_black_line(x,y):
+  global current_image, current_image_pixels
   
   width  = current_image.size[0]
   height = current_image.size[1]
 
-  current_image_pixels = current_image.convert( 'YCbCr' ).load()
-
   #new_image = Image.new( 'YCbCr', (width,height) )
   #new_image_pixels = new_image.load()
 
-  new_image = current_image.copy().transpose(Image.FLIP_TOP_BOTTOM).convert( 'YCbCr' ).convert( 'RGB' )
-  #new_image_pixels = new_image.load()
+  # Queue changes
 
-  #intensity,cb,cr = current_image_pixels[x,y]
+  #my_queue = Queue.Queue(0)
+  #my_queue.put([x,y,0])
+
+  # Apply queued changes
+  #x,y,intensity = my_queue.get()
+  #current_image
+
+  new_image = current_image.transpose(Image.FLIP_TOP_BOTTOM)
+  new_image_pixels = new_image.load()
+
+  intensity,cb,cr = current_image_pixels[x,y]
       
-  #new_image_pixels[x,y] = (0,cb,cr)
+  new_image_pixels[x,y] = (0,cb,cr)
 
-  return new_image#.convert( 'RGB' )
+  current_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
+  current_image_pixels = current_image.load()
 
 # Read and modify an image.
 
 def buildImage():
-  global current_image
-
-  # Read image and convert to YCbCr
-  current_image_pixels = current_image.convert( 'YCbCr' ).load()
+  global current_image, current_image_pixels
 
   width  = current_image.size[0]
   height = current_image.size[1]
@@ -313,13 +317,15 @@ def buildImage():
 
   # Done
 
-  return new_image.convert( 'RGB' )
+  current_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
+  current_image_pixels = current_image.load()
 
 
 
 # Set up the display and draw the current image
 
 def display():
+  global current_image
 
   # Clear window
 
@@ -328,7 +334,7 @@ def display():
 
   # rebuild the image
 
-  img = buildImage()
+  img = current_image.convert( 'RGB' ).transpose(Image.FLIP_TOP_BOTTOM)
 
   width  = img.size[0]
   height = img.size[1]
@@ -375,7 +381,7 @@ def keyboard( key, x, y ):
       saveImage( outputPath )
 
   elif key == 'a':
-    current_image = applyFilter().transpose(Image.FLIP_TOP_BOTTOM)
+    applyFilter()
 
   elif key == 'h':
     # Remove all previous corrections
@@ -383,7 +389,7 @@ def keyboard( key, x, y ):
     contrast = 1
 
     # Perform equalization
-    current_image = hist_equalize().transpose(Image.FLIP_TOP_BOTTOM)
+    hist_equalize()
 
   elif key == '-' or key == '_':
     c_rad -= 1
@@ -409,10 +415,11 @@ def keyboard( key, x, y ):
 
 def loadImage( path ):
 
-  global imgPath, contrast, brightness, current_image 
+  global imgPath, contrast, brightness, current_image, current_image_pixels
   imgPath = path
   
   current_image = Image.open( imgPath ).convert( 'YCbCr' )
+  current_image_pixels = current_image.load()
 
   # Reset global parameters
   contrast = 1 # contrast by which luminance is scaled
@@ -482,7 +489,7 @@ def mouse( btn, state, x, y ):
     button = None
     
     # Set current image to new image
-    current_image = buildImage().transpose(Image.FLIP_TOP_BOTTOM)
+    buildImage()
     contrast = 1
     brightness = 0
 
@@ -521,9 +528,9 @@ def motion( x, y ):
 
     print str(x) + "," + str(y)
 
-    # current_image = applyFilter().transpose(Image.FLIP_TOP_BOTTOM)
-    # current_image = applyFilterAroundPoint(x,y).transpose(Image.FLIP_TOP_BOTTOM)
-    current_image = draw_black_line(x,y).transpose(Image.FLIP_TOP_BOTTOM)
+    # applyFilter()
+    # applyFilterAroundPoint(x,y)
+    draw_black_line(x,y)
     print "Displaying"
 
   glutPostRedisplay()
@@ -532,6 +539,7 @@ def motion( x, y ):
 
 # Load current image
 current_image = Image.open( imgPath ).convert( 'YCbCr' )
+current_image_pixels = current_image.load()
 print current_image
     
 # Run OpenGL

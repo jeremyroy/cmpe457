@@ -436,7 +436,7 @@ def loadImage( path ):
 
 def saveImage( path ):
 
-  current_image.save( path )
+  current_image.convert( 'RGB').save( path )
 
 def loadFilter( path ):
   global current_filter

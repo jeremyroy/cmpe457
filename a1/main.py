@@ -4,6 +4,8 @@
 #
 #   numpy, PyOpenGL, Pillow
 
+# TODO: display temporary image, store current image on button unclick
+
 import sys, os, numpy, Queue
 
 try: # Pillow
@@ -155,15 +157,6 @@ def applyFilter():
     for j in range (height):
 
       new_y = 0
-
-      if orig_x > 0:
-        range_f_i = range(-orig_x, orig_x + 1)
-      else:
-        range_f_i = range(1)
-      if orig_y > 0:
-        range_f_j = range(-orig_y, orig_y + 1)
-      else:
-        range_f_j = range(1)
 
       for f_i in range(-orig_x, orig_x + 1):
         for f_j in range(-orig_y, orig_y + 1):

@@ -222,7 +222,7 @@ def applyFilterAroundPoint(x, y):
 
   # Set up a temporary copy of the current image
 
-  new_image = current_image#.transpose(Image.FLIP_TOP_BOTTOM)
+  new_image = current_image
   new_image_pixels = new_image.load()
 
   # Perform convolution around point (x,y)
@@ -244,16 +244,16 @@ def applyFilterAroundPoint(x, y):
 
           new_y = 0
 
-          #for f_i in range(-orig_x, orig_x + 1):
-          #  for f_j in range(-orig_y, orig_y + 1):
-          #    if ( 0 <= (i + f_i) < width ) and ( 0 <= (j + f_j) < height ):
-          #      # read source pixel
+          for f_i in range(-orig_x, orig_x + 1):
+            for f_j in range(-orig_y, orig_y + 1):
+              if ( 0 <= (i + f_i) < width ) and ( 0 <= (j + f_j) < height ):
+                # read source pixel
 
-          #      y,cb,cr = current_image_pixels[i+f_i ,j+f_j]
+                intensity,cb,cr = current_image_pixels[i+f_i ,height - 1 - (j+f_j)]
 
-          #      # Calculate partial sum
+                # Calculate partial sum
 
-          #      new_y += current_filter[orig_x + f_j][orig_y + f_i] * y
+                new_y += current_filter[orig_y + f_j][orig_x + f_i] * intensity
 
           # write destination pixel (while flipping the image in the vertical direction)
           #print "Blah: " + str(i) + "," + str(j)
@@ -263,7 +263,7 @@ def applyFilterAroundPoint(x, y):
 
   # Done
 
-  current_image = new_image#.transpose(Image.FLIP_TOP_BOTTOM)
+  current_image = new_image
   current_image_pixels = current_image.load()
 
 def draw_black_line(x,y):

@@ -134,10 +134,10 @@ def applyFilter():
 
   # Flip filter for convolution
  
-  current_filter = list(reversed(current_filter))
+  flipped_filter = list(reversed(current_filter))
 
-  for i in range(len(current_filter)):
-    current_filter[i] = list(reversed(current_filter[i]))
+  for i in range(len(flipped_filter)):
+    flipped_filter[i] = list(reversed(flipped_filter[i]))
 
   # Calculate convenient variables
 
@@ -156,6 +156,15 @@ def applyFilter():
 
       new_y = 0
 
+      if orig_x > 0:
+        range_f_i = range(-orig_x, orig_x + 1)
+      else:
+        range_f_i = range(1)
+      if orig_y > 0:
+        range_f_j = range(-orig_y, orig_y + 1)
+      else:
+        range_f_j = range(1)
+
       for f_i in range(-orig_x, orig_x + 1):
         for f_j in range(-orig_y, orig_y + 1):
           if ( 0 <= (i + f_i) < width ) and ( 0 <= (j + f_j) < height ):
@@ -165,7 +174,7 @@ def applyFilter():
 
             # Calculate partial sum
 
-            new_y += current_filter[orig_x + f_j][orig_y + f_i] * y
+            new_y += flipped_filter[orig_y + f_j][orig_x + f_i] * y
 
       # write destination pixel (while flipping the image in the vertical direction)
 
@@ -213,8 +222,8 @@ def applyFilterAroundPoint(x, y):
 
   # Set up a temporary copy of the current image
 
-  new_image = current_image.copy().transpose(Image.FLIP_TOP_BOTTOM)
-  new_image_pixels = new_image.convert( 'YCbCr' ).load()
+  new_image = current_image#.transpose(Image.FLIP_TOP_BOTTOM)
+  new_image_pixels = new_image.load()
 
   # Perform convolution around point (x,y)
 
@@ -247,14 +256,14 @@ def applyFilterAroundPoint(x, y):
           #      new_y += current_filter[orig_x + f_j][orig_y + f_i] * y
 
           # write destination pixel (while flipping the image in the vertical direction)
-          #print str(i) + "," + str(j)
-          y,cb,cr = current_image_pixels[i,j]
+          #print "Blah: " + str(i) + "," + str(j)
+          intensity,cb,cr = current_image_pixels[i,height-j-1]
       
-          new_image_pixels[i,height-j-1] = (0,cb,cr)
+          new_image_pixels[i,height-j-1] = (new_y,cb,cr)
 
   # Done
 
-  current_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
+  current_image = new_image#.transpose(Image.FLIP_TOP_BOTTOM)
   current_image_pixels = current_image.load()
 
 def draw_black_line(x,y):
@@ -529,8 +538,8 @@ def motion( x, y ):
     print str(x) + "," + str(y)
 
     # applyFilter()
-    # applyFilterAroundPoint(x,y)
-    draw_black_line(x,y)
+    applyFilterAroundPoint(x,y)
+    # draw_black_line(x,y)
     print "Displaying"
 
   glutPostRedisplay()

@@ -207,11 +207,11 @@ def applyFilterAroundPoint(x, y):
 
   # Flip filter for convolution
  
-  current_filter = list(reversed(current_filter))
+  flipped_filter = list(reversed(current_filter))
 
-  for i in range(len(current_filter)):
-    current_filter[i] = list(reversed(current_filter[i]))
-
+  for i in range(len(flipped_filter)):
+    flipped_filter[i] = list(reversed(flipped_filter[i]))
+ 
   # Calculate convenient variables
 
   width  = current_image.size[0]

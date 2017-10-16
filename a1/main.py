@@ -248,6 +248,10 @@ def applyFilterAroundPoint(x, y):
 
         dist_from_point = numpy.sqrt( pow(x-i,2) + pow(y-j,2) )
 
+        # Check if convolution already performed at point
+        if (current_image_pixels[i,j] == temp_draw_pixels[i,height-j-1] ):
+          continue
+
         if dist_from_point <= c_rad:
 
           # Perform convolution on this point
@@ -351,8 +355,10 @@ def display():
 
   # rebuild the image
   if button == None:
+    print "draw_current_image"
     draw_image = current_image.transpose(Image.FLIP_TOP_BOTTOM)
   else:
+    print "draw temp_image"
     draw_image = temp_draw_image.transpose(Image.FLIP_TOP_BOTTOM)
 
   if draw_image.mode != 'RGB':

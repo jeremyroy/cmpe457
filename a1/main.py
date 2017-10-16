@@ -157,6 +157,8 @@ def applyFilter():
     for j in range (height):
 
       new_y = 0
+      new_cb = 0
+      new_cr = 0
 
       for f_i in range(-orig_x, orig_x + 1):
         for f_j in range(-orig_y, orig_y + 1):
@@ -168,12 +170,14 @@ def applyFilter():
             # Calculate partial sum
 
             new_y += flipped_filter[orig_y + f_j][orig_x + f_i] * y
+            new_cb += flipped_filter[orig_y + f_j][orig_x + f_i] * cb
+            new_cr += flipped_filter[orig_y + f_j][orig_x + f_i] * cr
 
       # write destination pixel (while flipping the image in the vertical direction)
 
       y,cb,cr = current_image_pixels[i,j]
 
-      new_image_pixels[i,height-j-1] = (new_y,cb,cr)
+      new_image_pixels[i,height-j-1] = (int(new_y),int(new_cb),int(new_cr))
 
   # Done
 
@@ -236,6 +240,8 @@ def applyFilterAroundPoint(x, y):
           # Perform convolution on this point
 
           new_y = 0
+          new_cb = 0
+          new_cr = 0
 
           for f_i in range(-orig_x, orig_x + 1):
             for f_j in range(-orig_y, orig_y + 1):
@@ -247,12 +253,16 @@ def applyFilterAroundPoint(x, y):
                 # Calculate partial sum
 
                 new_y += current_filter[orig_y + f_j][orig_x + f_i] * intensity
+                new_cb += flipped_filter[orig_y + f_j][orig_x + f_i] * cb
+                new_cr += flipped_filter[orig_y + f_j][orig_x + f_i] * cr
 
           # write destination pixel (while flipping the image in the vertical direction)
           #print "Blah: " + str(i) + "," + str(j)
           intensity,cb,cr = current_image_pixels[i,height-j-1]
       
-          new_image_pixels[i,height-j-1] = (new_y,cb,cr)
+          new_image_pixels[i,height-j-1] = (int(new_y),int(new_cb),int(new_cr))
+
+
 
   # Done
 
@@ -437,7 +447,7 @@ def loadFilter( path ):
   # Load filter info memory
   filter_file = open(path,"r")
   xdim, ydim = map(int, filter_file.readline().split())
-  scale = float(filter_file.readline())
+  scale_factor = float(filter_file.readline())
   
   current_filter = [0] * ydim
 
@@ -446,8 +456,8 @@ def loadFilter( path ):
   
   filter_file.close()
 
-  # Scale filter
-  current_filter = [[float(j)*scale for j in i] for i in current_filter]
+  # Apply scale factor filter
+  current_filter = [[float(j)*scale_factor for j in i] for i in current_filter]
 
 # Handle window reshape
 

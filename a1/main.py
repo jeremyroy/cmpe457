@@ -4,7 +4,8 @@
 #
 #   numpy, PyOpenGL, Pillow
 
-# TODO: display temporary image, store current image on button unclick
+# Augmented by: Jeremy Roy
+# Student number: 10092487
 
 import sys, os, numpy, Queue
 
@@ -278,37 +279,6 @@ def applyFilterAroundPoint(x, y):
           temp_draw_pixels[i,height-j-1] = (int(new_r),int(new_g),int(new_b))
 
   # Done
-  #current_image = temp_draw_image
-  #current_image_pixels = current_image.load()
-
-
-def draw_black_line(x,y):
-  global current_image, current_image_pixels
-  
-  width  = current_image.size[0]
-  height = current_image.size[1]
-
-  #new_image = Image.new( 'YCbCr', (width,height) )
-  #new_image_pixels = new_image.load()
-
-  # Queue changes
-
-  #my_queue = Queue.Queue(0)
-  #my_queue.put([x,y,0])
-
-  # Apply queued changes
-  #x,y,intensity = my_queue.get()
-  #current_image
-
-  new_image = current_image.transpose(Image.FLIP_TOP_BOTTOM)
-  new_image_pixels = new_image.load()
-
-  intensity,cb,cr = current_image_pixels[x,y]
-      
-  new_image_pixels[x,y] = (0,cb,cr)
-
-  current_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
-  current_image_pixels = current_image.load()
 
 # Read and modify an image.
 
@@ -339,7 +309,6 @@ def buildImage():
       # write destination pixel (while flipping the image in the vertical direction)
       
       temp_draw_pixels[i,j] = (y,cb,cr)
-
   # Done
 
 
@@ -534,6 +503,7 @@ def mouse( btn, state, x, y ):
     current_image = temp_draw_image.copy()
     current_image_pixels = current_image.load()
 
+  glutPostRedisplay()
 
 # Handle mouse motion
 
@@ -556,7 +526,6 @@ def motion( x, y ):
       contrast = 0
 
   elif button == GLUT_RIGHT_BUTTON:
-    print str(x) + "," + str(y)
 
     width  = current_image.size[0]
     height = current_image.size[1]
@@ -567,12 +536,7 @@ def motion( x, y ):
     x = x - baseX
     y = (windowHeight - y) - baseY
 
-    print str(x) + "," + str(y)
-
-    # applyFilter()
     applyFilterAroundPoint(x,y)
-    # draw_black_line(x,y)
-    print "Displaying"
 
   glutPostRedisplay()
 

@@ -63,6 +63,11 @@ def hist_equalize():
   width  = current_image.size[0]
   height = current_image.size[1]
 
+  # Convert image to YCbCr if not already in this format
+  if (current_image.mode != 'YCbCr'):
+    current_image = current_image.convert( 'YCbCr' )
+    current_image_pixels = current_image.load()
+
   # Set up a new, blank image of the same size
 
   temp_image = Image.new( 'YCbCr', (width,height) )
@@ -121,6 +126,11 @@ def applyFilter():
 
   print "Starting convolution"
 
+  # Convert image to RGB if not already in this format
+  if (current_image.mode != 'RGB'):
+    current_image = current_image.convert( 'RGB' )
+    current_image_pixels = current_image.load()
+
   # If no filter loaded, load a filter
 
   if current_filter == None:
@@ -148,7 +158,7 @@ def applyFilter():
 
   # Set up a new, blank image of the same size
 
-  new_image = Image.new( 'YCbCr', (width,height) )
+  new_image = Image.new( 'RGB', (width,height) )
   new_image_pixels = new_image.load()
 
   # Perform convolution
@@ -156,28 +166,26 @@ def applyFilter():
   for i in range(width):
     for j in range (height):
 
-      new_y = 0
-      new_cb = 0
-      new_cr = 0
+      new_r = 0
+      new_g = 0
+      new_b = 0
 
       for f_i in range(-orig_x, orig_x + 1):
         for f_j in range(-orig_y, orig_y + 1):
           if ( 0 <= (i + f_i) < width ) and ( 0 <= (j + f_j) < height ):
             # read source pixel
       
-            y,cb,cr = current_image_pixels[i+f_i ,j+f_j]
+            r,g,b = current_image_pixels[i+f_i ,j+f_j]
 
             # Calculate partial sum
 
-            new_y += flipped_filter[orig_y + f_j][orig_x + f_i] * y
-            new_cb += flipped_filter[orig_y + f_j][orig_x + f_i] * cb
-            new_cr += flipped_filter[orig_y + f_j][orig_x + f_i] * cr
+            new_r += flipped_filter[orig_y + f_j][orig_x + f_i] * r
+            new_g += flipped_filter[orig_y + f_j][orig_x + f_i] * g
+            new_b += flipped_filter[orig_y + f_j][orig_x + f_i] * b
 
       # write destination pixel (while flipping the image in the vertical direction)
 
-      y,cb,cr = current_image_pixels[i,j]
-
-      new_image_pixels[i,height-j-1] = (int(new_y),int(new_cb),int(new_cr))
+      new_image_pixels[i,height-j-1] = (int(new_r),int(new_g),int(new_b))
 
   # Done
 
@@ -191,6 +199,11 @@ def applyFilter():
 def applyFilterAroundPoint(x, y):
   
   global current_filter, c_rad, current_image, current_image_pixels
+
+  # Convert image to RGB if not already in this format
+  if (current_image.mode != 'RGB'):
+    current_image = current_image.convert( 'RGB' )
+    current_image_pixels = current_image.load()
 
   # If no filter loaded, load a filter
 
@@ -239,28 +252,26 @@ def applyFilterAroundPoint(x, y):
 
           # Perform convolution on this point
 
-          new_y = 0
-          new_cb = 0
-          new_cr = 0
+          new_r = 0
+          new_g = 0
+          new_b = 0
 
           for f_i in range(-orig_x, orig_x + 1):
             for f_j in range(-orig_y, orig_y + 1):
               if ( 0 <= (i + f_i) < width ) and ( 0 <= (j + f_j) < height ):
                 # read source pixel
 
-                intensity,cb,cr = current_image_pixels[i+f_i ,height - 1 - (j+f_j)]
+                r,g,b = current_image_pixels[i+f_i ,height - 1 - (j+f_j)]
 
                 # Calculate partial sum
 
-                new_y += current_filter[orig_y + f_j][orig_x + f_i] * intensity
-                new_cb += flipped_filter[orig_y + f_j][orig_x + f_i] * cb
-                new_cr += flipped_filter[orig_y + f_j][orig_x + f_i] * cr
+                new_r += current_filter[orig_y + f_j][orig_x + f_i] * r
+                new_g += flipped_filter[orig_y + f_j][orig_x + f_i] * g
+                new_b += flipped_filter[orig_y + f_j][orig_x + f_i] * b
 
           # write destination pixel (while flipping the image in the vertical direction)
-          #print "Blah: " + str(i) + "," + str(j)
-          intensity,cb,cr = current_image_pixels[i,height-j-1]
       
-          new_image_pixels[i,height-j-1] = (int(new_y),int(new_cb),int(new_cr))
+          new_image_pixels[i,height-j-1] = (int(new_r),int(new_g),int(new_b))
 
 
 
@@ -305,6 +316,11 @@ def buildImage():
   width  = current_image.size[0]
   height = current_image.size[1]
 
+  # Convert image to YCbCr if not already in this format
+  if (current_image.mode != 'YCbCr'):
+    current_image = current_image.convert( 'YCbCr' )
+    current_image_pixels = current_image.load()
+
   # Set up a new, blank image of the same size
 
   new_image = Image.new( 'YCbCr', (width,height) )
@@ -346,7 +362,11 @@ def display():
 
   # rebuild the image
 
-  img = current_image.convert( 'RGB' ).transpose(Image.FLIP_TOP_BOTTOM)
+  if current_image.mode != 'RGB':
+    img = current_image.convert( 'RGB' ).transpose(Image.FLIP_TOP_BOTTOM)
+  else:
+    img = current_image.transpose(Image.FLIP_TOP_BOTTOM)
+
 
   width  = img.size[0]
   height = img.size[1]
@@ -430,7 +450,7 @@ def loadImage( path ):
   global imgPath, contrast, brightness, current_image, current_image_pixels
   imgPath = path
   
-  current_image = Image.open( imgPath ).convert( 'YCbCr' )
+  current_image = Image.open( imgPath )
   current_image_pixels = current_image.load()
 
   # Reset global parameters
@@ -439,7 +459,11 @@ def loadImage( path ):
 
 def saveImage( path ):
 
-  current_image.convert( 'RGB').save( path )
+  if (current_image.mode == 'RGB'):
+    current_image.save( path )
+  else:
+    current_image.convert( 'RGB').save( path )
+
 
 def loadFilter( path ):
   global current_filter
@@ -550,7 +574,7 @@ def motion( x, y ):
 
 
 # Load current image
-current_image = Image.open( imgPath ).convert( 'YCbCr' )
+current_image = Image.open( imgPath )
 current_image_pixels = current_image.load()
 print current_image
     

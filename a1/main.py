@@ -199,8 +199,13 @@ def applyFilter():
 def applyFilterAroundPoint(x, y):
   
   global current_filter, c_rad, current_image, current_image_pixels
+  global temp_draw_image, temp_draw_pixels
 
   # Convert image to RGB if not already in this format
+  if (temp_draw_image.mode != 'RGB'):
+    temp_draw_image = temp_draw_image.convert( 'RGB' )
+    temp_draw_pixels = temp_draw_image.load()
+
   if (current_image.mode != 'RGB'):
     current_image = current_image.convert( 'RGB' )
     current_image_pixels = current_image.load()
@@ -229,11 +234,6 @@ def applyFilterAroundPoint(x, y):
 
   width  = current_image.size[0]
   height = current_image.size[1]
-
-  # Set up a temporary copy of the current image
-
-  new_image = current_image.copy()
-  new_image_pixels = new_image.load()
 
   # Perform convolution around point (x,y)
 
@@ -271,11 +271,11 @@ def applyFilterAroundPoint(x, y):
 
           # write destination pixel (while flipping the image in the vertical direction)
       
-          new_image_pixels[i,height-j-1] = (int(new_r),int(new_g),int(new_b))
+          temp_draw_pixels[i,height-j-1] = (int(new_r),int(new_g),int(new_b))
 
   # Done
-  current_image = new_image
-  current_image_pixels = current_image.load()
+  #current_image = temp_draw_image
+  #current_image_pixels = current_image.load()
 
 
 def draw_black_line(x,y):

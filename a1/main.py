@@ -33,9 +33,11 @@ contrast = 1 # contrast by which luminance is scaled
 brightness = 0 # brightness by which luminance is scaled
 
 current_image = None
+temp_draw_image = None
 current_filter = None
 
 current_image_pixels = None
+temp_draw_pixels = None
 
 c_rad = 20
 
@@ -114,8 +116,6 @@ def hist_equalize():
 
   current_image = temp_image.transpose(Image.FLIP_TOP_BOTTOM)
   current_image_pixels = current_image.load()
-
-
 
 
 # Apply filter by convolution
@@ -232,7 +232,7 @@ def applyFilterAroundPoint(x, y):
 
   # Set up a temporary copy of the current image
 
-  new_image = current_image
+  new_image = current_image.copy()
   new_image_pixels = new_image.load()
 
   # Perform convolution around point (x,y)
@@ -265,7 +265,7 @@ def applyFilterAroundPoint(x, y):
 
                 # Calculate partial sum
 
-                new_r += current_filter[orig_y + f_j][orig_x + f_i] * r
+                new_r += flipped_filter[orig_y + f_j][orig_x + f_i] * r
                 new_g += flipped_filter[orig_y + f_j][orig_x + f_i] * g
                 new_b += flipped_filter[orig_y + f_j][orig_x + f_i] * b
 
@@ -273,12 +273,10 @@ def applyFilterAroundPoint(x, y):
       
           new_image_pixels[i,height-j-1] = (int(new_r),int(new_g),int(new_b))
 
-
-
   # Done
-
   current_image = new_image
   current_image_pixels = current_image.load()
+
 
 def draw_black_line(x,y):
   global current_image, current_image_pixels
@@ -311,20 +309,15 @@ def draw_black_line(x,y):
 # Read and modify an image.
 
 def buildImage():
-  global current_image, current_image_pixels
+  global temp_draw_image, temp_draw_pixels
 
-  width  = current_image.size[0]
-  height = current_image.size[1]
+  width  = temp_draw_image.size[0]
+  height = temp_draw_image.size[1]
 
   # Convert image to YCbCr if not already in this format
-  if (current_image.mode != 'YCbCr'):
-    current_image = current_image.convert( 'YCbCr' )
-    current_image_pixels = current_image.load()
-
-  # Set up a new, blank image of the same size
-
-  new_image = Image.new( 'YCbCr', (width,height) )
-  new_image_pixels = new_image.load()
+  if (temp_draw_image.mode != 'YCbCr'):
+    temp_draw_image = temp_draw_image.convert( 'YCbCr' )
+    temp_draw_pixels = temp_draw_image.load()
 
   # Build destination image from source image
 
@@ -333,7 +326,7 @@ def buildImage():
 
       # read source pixel
       
-      y,cb,cr = current_image_pixels[i,j]
+      y,cb,cr = temp_draw_pixels[i,j]
 
       # ---- MODIFY PIXEL ----
 
@@ -341,19 +334,15 @@ def buildImage():
 
       # write destination pixel (while flipping the image in the vertical direction)
       
-      new_image_pixels[i,height-j-1] = (y,cb,cr)
+      temp_draw_pixels[i,j] = (y,cb,cr)
 
   # Done
-
-  current_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
-  current_image_pixels = current_image.load()
-
 
 
 # Set up the display and draw the current image
 
 def display():
-  global current_image
+  global current_image, temp_draw_image, button
 
   # Clear window
 
@@ -361,11 +350,15 @@ def display():
   glClear( GL_COLOR_BUFFER_BIT )
 
   # rebuild the image
-
-  if current_image.mode != 'RGB':
-    img = current_image.convert( 'RGB' ).transpose(Image.FLIP_TOP_BOTTOM)
+  if button == None:
+    draw_image = current_image.transpose(Image.FLIP_TOP_BOTTOM)
   else:
-    img = current_image.transpose(Image.FLIP_TOP_BOTTOM)
+    draw_image = temp_draw_image.transpose(Image.FLIP_TOP_BOTTOM)
+
+  if draw_image.mode != 'RGB':
+    img = draw_image.convert( 'RGB' )
+  else:
+    img = draw_image
 
 
   width  = img.size[0]
@@ -510,7 +503,9 @@ initBrightness = 0
 def mouse( btn, state, x, y ):
 
   global button, initX, initY, initContrast, initBrightness
-  global contrast, brightness, current_image
+  global contrast, brightness
+  global current_image, current_image_pixels
+  global temp_draw_image, temp_draw_pixels
 
   if state == GLUT_DOWN:
 
@@ -519,6 +514,8 @@ def mouse( btn, state, x, y ):
     initY = y
     initContrast = contrast
     initBrightness = brightness
+    temp_draw_image = current_image.copy()
+    temp_draw_pixels = temp_draw_image.load()
 
   elif state == GLUT_UP:
 
@@ -528,6 +525,8 @@ def mouse( btn, state, x, y ):
     buildImage()
     contrast = 1
     brightness = 0
+    current_image = temp_draw_image.copy()
+    current_image_pixels = current_image.load()
 
 
 # Handle mouse motion
